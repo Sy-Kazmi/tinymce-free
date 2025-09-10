@@ -1,7 +1,7 @@
 <template>
   <div class="editor-container">
     <h2>TinyMCE Editor 2</h2>
-    <p>This editor uses TinyMCE files from /vendor/tinymce2/</p>
+    <p>This editor uses TinyMCE files from /vendor/tinymce2/ with full emoji support</p>
     <editor
         :init="editorConfig"
         tinymce-script-src="/vendor/tinymce2/tinymce.min.js"
@@ -35,7 +35,22 @@
          {title: 'Table with borders', value: 'table-bordered'},
          {title: 'Striped table', value: 'table-striped'}
        ],
-       emoticons_database_url: '/vendor/tinymce2/plugins/emoticons/js/emojis.min.js',
+       // Remove custom emoji database to use TinyMCE's full emoji set
+       // emoticons_database_url: '/vendor/tinymce2/plugins/emoticons/js/emojiimages.min.js',
+       // emoticons_database_id: 'emojiimages',
+       
+       // Optional: Configure emoji categories to show
+       emoticons_append: {
+         custom_category: {
+           title: 'Custom',
+           items: [
+             { keywords: ['thumbs up'], char: '👍' },
+             { keywords: ['heart'], char: '❤️' },
+             { keywords: ['star'], char: '⭐' }
+           ]
+         }
+       },
+       
        codesample_languages: [
          {name: 'HTML/XML', id: 'markup'},
          {text: 'JavaScript', value: 'javascript'},
