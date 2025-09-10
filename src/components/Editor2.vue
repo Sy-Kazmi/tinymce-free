@@ -6,21 +6,50 @@
         :init="editorConfig"
         tinymce-script-src="/vendor/tinymce2/tinymce.min.js"
         v-model="form.about_text"
+        license_key="gpl"
      ></editor>
+     
+    <FileBrowser 
+      :is-open="showFileBrowser" 
+      @close="showFileBrowser = false"
+      @select="handleFileSelect"
+    />
   </div>
 </template>
 
 <script setup>
     import { ref } from 'vue';
     import Editor from '@tinymce/tinymce-vue';
+    import FileBrowser from './FileBrowser.vue';
 
     const form = ref({ about_text: '' });
+    const showFileBrowser = ref(false);
+    let currentFilePickerCallback = null;
 
     const mentionUsers = ref([
       { id: 'john.doe', name: 'John Doe' },
       { id: 'jane.smith', name: 'Jane Smith' },
       { id: 'peter.jones', name: 'Peter Jones' }
     ]);
+
+    const handleFileSelect = (file) => {
+      if (currentFilePickerCallback) {
+        currentFilePickerCallback(file.url, {
+          title: file.name,
+          alt: file.name
+        });
+        currentFilePickerCallback = null;
+      }
+    };
+
+    // Make functions available globally for TinyMCE
+    window.editor2_openFileBrowser = () => {
+      showFileBrowser.value = true;
+    };
+
+    window.editor2_setCallback = (callback) => {
+      currentFilePickerCallback = callback;
+    };
 
     const editorConfig = {
        plugins: 'emoticons table advlist codesample autosave autoresize lists link image textcolor media contextmenu paste mention',
@@ -52,6 +81,39 @@
        paste_as_text: false,
        paste_webkit_styles: 'all',
        paste_retain_style_properties: 'all',
+
+       // File upload configuration
+       automatic_uploads: true,
+       file_picker_types: 'image',
+       images_upload_handler: function (blobInfo, success, failure) {
+         const formData = new FormData();
+         formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+         fetch('http://localhost:3001/api/upload', {
+           method: 'POST',
+           body: formData
+         })
+         .then(response => response.json())
+         .then(result => {
+           if (result.location) {
+             success(result.location);
+           } else {
+             failure(result.error || 'Upload failed');
+           }
+         })
+         .catch(error => {
+           console.error('Upload error:', error);
+           failure('Network error: ' + error.message);
+         });
+       },
+
+       // File picker for image dialog
+       file_picker_callback: function (callback, meta) {
+         if (meta.filetype === 'image') {
+           window.editor2_setCallback(callback);
+           window.editor2_openFileBrowser();
+         }
+       },
 
        mentions: {
          source: (query, successCallback) => {
